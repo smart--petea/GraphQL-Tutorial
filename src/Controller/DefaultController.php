@@ -19,6 +19,42 @@ class DefaultController extends AbstractController
      */
     public function index(Request $request)
     {
+        $books = [
+            1 => [
+                "name" => "Name of the Wing",
+                "genre" => "Fantasy",
+                "id" => "1"
+            ],
+            2 => [
+                "name" => "The Final Empire",
+                "genre" => "Fantasy",
+                "id" => "2"
+            ],
+            3 => [
+                "name" => "The Long Earth",
+                "genre" => "Sci-Fi",
+                "id" => "3"
+            ],
+        ];
+
+        $authors = [
+            1 => [
+                "name"=> "Patrick Rothfuss",
+                "age" => 42,
+                "id" => "1"
+            ],
+            2 => [
+                "name"=> "Brandon Sanderson",
+                "age" => 42,
+                "id" => "2"
+            ],
+            3 => [
+                "name"=> "Terry Pratchett",
+                "age" => 66,
+                "id" => "3"
+            ],
+        ];
+
         try {
             $query = $this->getGraphQLQuery($request);
         } catch (\Exception $ex) {
@@ -28,12 +64,30 @@ class DefaultController extends AbstractController
             ));
         }
 
+        $authorType = new ObjectType([
+            'name' => 'Author',
+            'fields' => [
+                'id' => Type::id(),
+                'name' => Type::string(),
+                'age' => Type::int()
+            ]
+        ]);
+
         $bookType = new ObjectType([
             'name' => 'Book',
             'fields' => [
-                'id' => Type::string(),
+                'id' => Type::id(),
                 'name' => Type::string(),
                 'genre' => Type::string()
+            ]
+        ]);
+
+        $authorType = new ObjectType([
+            'name' => 'Author',
+            'fields' => [
+                'id' => Type::id(),
+                'name' => Type::string(),
+                'age' => Type::int()
             ]
         ]);
 
@@ -41,16 +95,31 @@ class DefaultController extends AbstractController
             'name' => 'RootQueryType',
             'fields' => [
                 'book' => [
-                    'type' => $bookType,
-                    'args' => [
-                        'id' => Type::string()
+                        'type' => $bookType,
+                        'args' => [
+                            'id' => Type::id()
+                        ],
+                        'resolve' => function($parent, $args) use ($books) {
+                            $id = (int) $args['id'];
+                            if(isset($books[$id])) {
+                                return $books[$id];
+                            }
+
+                            return null;
+                        }
                     ],
-                    'resolve' => function($parent, $args) {
-                        return array(
-                            'id' => '1',
-                            'name' => 'Petr pervii',
-                            'genre' => 'Imperator'
-                        );
+                'author' => [
+                    'type' => $authorType,
+                    'args' => [
+                        'id' => Type::id()
+                    ],
+                    'resolve' => function($parent, $args) use ($authors) {
+                        $id = (int) $args['id'];
+                        if(empty($authors[$id])) {
+                            return null;
+                        }
+
+                        return $authors[$id];
                     }
                 ]
             ]
@@ -59,6 +128,7 @@ class DefaultController extends AbstractController
         $schema = new Schema([
             'query' => $rootQuery
         ]);
+
 
         $result = GraphQL::executeQuery($schema, $query, null, null, null);
 
