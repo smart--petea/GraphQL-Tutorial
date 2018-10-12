@@ -23,17 +23,20 @@ class DefaultController extends AbstractController
             1 => [
                 "name" => "Name of the Wing",
                 "genre" => "Fantasy",
-                "id" => "1"
+                "id" => "1",
+                'authorId' => 1
             ],
             2 => [
                 "name" => "The Final Empire",
                 "genre" => "Fantasy",
-                "id" => "2"
+                "id" => "2",
+                'authorId' => 2
             ],
             3 => [
                 "name" => "The Long Earth",
                 "genre" => "Sci-Fi",
-                "id" => "3"
+                "id" => "3",
+                'authorId' => 3
             ],
         ];
 
@@ -78,16 +81,21 @@ class DefaultController extends AbstractController
             'fields' => [
                 'id' => Type::id(),
                 'name' => Type::string(),
-                'genre' => Type::string()
-            ]
-        ]);
+                'genre' => Type::string(),
+                'author' => [
+                    'type' => $authorType,
+                    'resolve' => function($root, $args) use($books, $authors) {
+                        var_dump($args);
+                        exit(); //todo work here
+                        $bookId = (int) $args['id'];
+                        if(empty($books[$bookId])) {
+                            return null;
+                        }
 
-        $authorType = new ObjectType([
-            'name' => 'Author',
-            'fields' => [
-                'id' => Type::id(),
-                'name' => Type::string(),
-                'age' => Type::int()
+
+                        return $authors[$books[$bookId]['authorId']];
+                    }
+                ]
             ]
         ]);
 
