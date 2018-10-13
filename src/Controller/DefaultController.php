@@ -138,7 +138,19 @@ class DefaultController extends AbstractController
 
                         return $authors[$id];
                     }
-                ]
+                ],
+                'books' => [
+                    'type' => Type::listOf($bookType),
+                    'resolve' => function($root, $args) use ($books) {
+                        return $books;
+                    }
+                ],
+                'authors' => [
+                    'type' => Type::listOf($authorType),
+                    'resolve' => function($root, $args) use ($authors) {
+                        return $authors;
+                    }
+                ],
             ]
         ]);
 
