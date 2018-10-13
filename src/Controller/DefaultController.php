@@ -67,13 +67,30 @@ class DefaultController extends AbstractController
             ));
         }
 
+        $bookType = null; //be carefull with this statement
+
         $authorType = new ObjectType([
             'name' => 'Author',
-            'fields' => [
-                'id' => Type::id(),
-                'name' => Type::string(),
-                'age' => Type::int()
-            ]
+            'fields' => function () use (&$bookType, $books) {
+                return [
+                    'id' => Type::id(),
+                    'name' => Type::string(),
+                    'age' => Type::int(),
+                    'books' => array(
+                        'type' => Type::listOf($bookType),
+                        'resolve' => function($root, $args) use ($books) {
+                            $auths = array();
+                            foreach($books as $book) {
+                                if($root['id'] == $book['authorId']) {
+                                    $auths[] = $book;
+                                }
+                            }
+
+                            return $auths;
+                        }
+                ),
+                ];
+            }
         ]);
 
         $bookType = new ObjectType([
