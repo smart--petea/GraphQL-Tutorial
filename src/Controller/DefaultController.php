@@ -85,15 +85,7 @@ class DefaultController extends AbstractController
                 'author' => [
                     'type' => $authorType,
                     'resolve' => function($root, $args) use($books, $authors) {
-                        var_dump($args);
-                        exit(); //todo work here
-                        $bookId = (int) $args['id'];
-                        if(empty($books[$bookId])) {
-                            return null;
-                        }
-
-
-                        return $authors[$books[$bookId]['authorId']];
+                        return $authors[$root['authorId']];
                     }
                 ]
             ]
