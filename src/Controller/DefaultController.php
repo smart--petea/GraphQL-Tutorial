@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller as AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -11,6 +11,9 @@ use \GraphQL\Type\Definition\ObjectType;
 use \GraphQL\Type\Definition\Type;
 use \GraphQL\Type\Schema;
 use \GraphQL\GraphQL;
+
+use App\Document\Book;
+use App\Document\Author;
 
 class DefaultController extends AbstractController
 {
@@ -29,28 +32,34 @@ class DefaultController extends AbstractController
             ));
         }
 
+        $mongoManager = $this->get('doctrine_mongodb')->getManager();
+
         $bookType = null; //be carefull with this statement
 
         $authorType = new ObjectType([
             'name' => 'Author',
-            'fields' => function () use (&$bookType, $books) {
+            'fields' => function () use (&$bookType, $mongoManager) {
                 return [
                     'id' => Type::id(),
                     'name' => Type::string(),
                     'age' => Type::int(),
                     'books' => array(
                         'type' => Type::listOf($bookType),
-                        'resolve' => function($root, $args) use ($books) {
-                            $auths = array();
-                            foreach($books as $book) {
-                                if($root['id'] == $book['authorId']) {
-                                    $auths[] = $book;
-                                }
+                        'resolve' => function($root, $args) use ($mongoManager) {
+
+                            $booksMongo = $mongoManager->getRepository(Book::class)->findBy(array('authorId' => $root['id']));
+                            if(empty($booksMongo)) {
+                                return array();
                             }
 
-                            return $auths;
+                            $books = array();
+                            foreach($booksMongo as $bookMongo) {
+                                $books[] = $bookMongo->toArray();
+                            }
+
+                            return $books;
                         }
-                ),
+                    ),
                 ];
             }
         ]);
@@ -63,8 +72,9 @@ class DefaultController extends AbstractController
                 'genre' => Type::string(),
                 'author' => [
                     'type' => $authorType,
-                    'resolve' => function($root, $args) use($books, $authors) {
-                        return $authors[$root['authorId']];
+                    'resolve' => function($root, $args) use($mongoManager) {
+                        $author = $mongoManager->getRepository(Author::class)->find($root['authorId']);
+                        return empty($author) ? null : $author->toArray();
                     }
                 ]
             ]
@@ -78,13 +88,10 @@ class DefaultController extends AbstractController
                         'args' => [
                             'id' => Type::id()
                         ],
-                        'resolve' => function($parent, $args) use ($books) {
-                            $id = (int) $args['id'];
-                            if(isset($books[$id])) {
-                                return $books[$id];
-                            }
+                        'resolve' => function($parent, $args) use ($mongoManager) {
+                            $book = $mongoManager->getRepository(Book::class)->find($args['id']);
 
-                            return null;
+                            return empty($book) ? $book : $book->toArray();
                         }
                     ],
                 'author' => [
@@ -92,24 +99,50 @@ class DefaultController extends AbstractController
                     'args' => [
                         'id' => Type::id()
                     ],
-                    'resolve' => function($parent, $args) use ($authors) {
-                        $id = (int) $args['id'];
-                        if(empty($authors[$id])) {
+                    'resolve' => function($parent, $args) use ($mongoManager) {
+
+                        $author = $mongoManager->getRepository(Author::class)->find($args['id']);
+                        if(empty($author))
+                        {
                             return null;
                         }
 
-                        return $authors[$id];
+                        return $author->toArray();
                     }
                 ],
                 'books' => [
                     'type' => Type::listOf($bookType),
-                    'resolve' => function($root, $args) use ($books) {
+                    'resolve' => function($root, $args) use ($mongoManager) {
+                        $booksMongo = $mongoManager->getRepository(Book::class)->findAll();
+                        if(empty($booksMongo))
+                        {
+                            return array();
+                        }
+
+                        $books = array();
+                        foreach($booksMongo as $bookMongo)
+                        {
+                            $books[] = $bookMongo->toArray();
+                        }
+
                         return $books;
                     }
                 ],
                 'authors' => [
                     'type' => Type::listOf($authorType),
-                    'resolve' => function($root, $args) use ($authors) {
+                    'resolve' => function($root, $args) use ($mongoManager) {
+                        $authorsMongo = $mongoManager->getRepository(Author::class)->findAll();
+                        if(empty($authorsMongo))
+                        {
+                            return array();
+                        }
+
+                        $authors = array();
+                        foreach($authorsMongo as $authorMongo)
+                        {
+                            $authors[] = $authorMongo->toArray();
+                        }
+
                         return $authors;
                     }
                 ],
@@ -120,9 +153,7 @@ class DefaultController extends AbstractController
             'query' => $rootQuery
         ]);
 
-
         $result = GraphQL::executeQuery($schema, $query, null, null, null);
-
 
         return new JsonResponse(
             $result->toArray()

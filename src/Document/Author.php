@@ -47,4 +47,13 @@ class Author
     {
         $this->age = $age;
     }
+
+    public function toArray()
+    {
+        return array(
+            'age' => $this->age,
+            'id' => $this->id,
+            'name' => $this->name
+        );
+    }
 }
