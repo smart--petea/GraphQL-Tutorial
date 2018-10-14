@@ -19,44 +19,6 @@ class DefaultController extends AbstractController
      */
     public function index(Request $request)
     {
-        $books = [
-            1 => [
-                "name" => "Name of the Wing",
-                "genre" => "Fantasy",
-                "id" => "1",
-                'authorId' => 1
-            ],
-            2 => [
-                "name" => "The Final Empire",
-                "genre" => "Fantasy",
-                "id" => "2",
-                'authorId' => 2
-            ],
-            3 => [
-                "name" => "The Long Earth",
-                "genre" => "Sci-Fi",
-                "id" => "3",
-                'authorId' => 3
-            ],
-        ];
-
-        $authors = [
-            1 => [
-                "name"=> "Patrick Rothfuss",
-                "age" => 42,
-                "id" => "1"
-            ],
-            2 => [
-                "name"=> "Brandon Sanderson",
-                "age" => 42,
-                "id" => "2"
-            ],
-            3 => [
-                "name"=> "Terry Pratchett",
-                "age" => 66,
-                "id" => "3"
-            ],
-        ];
 
         try {
             $query = $this->getGraphQLQuery($request);
