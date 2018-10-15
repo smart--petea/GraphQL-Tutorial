@@ -149,8 +149,51 @@ class DefaultController extends AbstractController
             ]
         ]);
 
+        $rootMutation = new ObjectType([
+            'name' => 'RootMutationType',
+            'fields' => [
+                'addAuthor' => [
+                    'type' => $authorType,
+                    'args' => [
+                        'name' => Type::string(),
+                        'age' => Type::int()
+                    ],
+                    'resolve' => function($root, $args) use ($mongoManager) {
+                        $author = new Author();
+                        $author->setName($args['name']);
+                        $author->setAge($args['age']);
+
+                        $mongoManager->persist($author);
+                        $mongoManager->flush();
+
+                        return $author->toArray();
+                    }
+                ],
+                'addBook' => [
+                    'type' => $bookType,
+                    'args' => [
+                        'name' => Type::string(),
+                        'genre' => Type::string(),
+                        'authorId' => Type::id()
+                    ],
+                    'resolve' => function($root, $args) use ($mongoManager) {
+                        $book = new Book();
+                        $book->setName($args['name']);
+                        $book->setGenre($args['genre']);
+                        $book->setAuthorId($args['authorId']);
+
+                        $mongoManager->persist($book);
+                        $mongoManager->flush();
+
+                        return $book->toArray();
+                    }
+                ]
+            ]
+        ]);
+
         $schema = new Schema([
-            'query' => $rootQuery
+            'query' => $rootQuery,
+            'mutation' => $rootMutation
         ]);
 
         $result = GraphQL::executeQuery($schema, $query, null, null, null);
